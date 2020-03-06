@@ -4,12 +4,9 @@
 #include <math.h>
 #include "interface.h"
 
-//считывает коэффициенты полинома 
 void ReadCoefficients(Array* Polinom)
 {
 	int error_code;
-	Polinom->buffer = malloc(Polinom->el_size * (Polinom->count_element));
-	
 	do 
 	{
 		printf("Please, input polynomial coefficients a(0), a(1) ...a(n-1), a(n) by Space : ");
@@ -28,8 +25,7 @@ void ReadCoefficients(Array* Polinom)
 						break;
 					}
 				}
-				
-				error_code ? printf("Successfully completed\n\n") : printf("InputError: expected integer polynomial coefficients. "
+				error_code ? CleanCh(), printf("Successfully completed\n\n") : printf("InputError: expected integer polynomial coefficients. "
 																			 "Please, try again.\n\n");
 				break;
 			}
@@ -44,6 +40,7 @@ void ReadCoefficients(Array* Polinom)
 						break;
 					}
 				}
+				CleanCh();
 				error_code ? printf("Successfully completed\n\n") : printf("InputError: expected double polynomial coefficients. " 
 																		     "Please, try again.\n\n");				
 				break;
@@ -52,7 +49,6 @@ void ReadCoefficients(Array* Polinom)
 	} while (!error_code);
 }
 
-//вывод полинома в полной форме
 void OutputPolinom(Array* Polinom)
 {
 	int i;
@@ -61,7 +57,7 @@ void OutputPolinom(Array* Polinom)
 	{
 		case sizeof(int):
 		{
-			for (i = Polinom->count_element - 1; i >= 0; i--)
+			for (i = Polinom->degree; i >= 0; i--)
 				if (*((int*)Polinom->buffer + i) < 0)
 				{
 					printf("(%d) * x^%d", *((int*)Polinom->buffer + i), i);
@@ -76,7 +72,7 @@ void OutputPolinom(Array* Polinom)
 		}
 		case sizeof(double):
 		{
-			for (i = Polinom->count_element - 1; i >= 0; i--)
+			for (i = Polinom->degree; i >= 0; i--)
 				if (*((double*)Polinom->buffer + i) < 0)
 				{
 					printf("(%lf) * x^%d", *((double*)Polinom->buffer + i), i);
@@ -93,57 +89,55 @@ void OutputPolinom(Array* Polinom)
 	printf("\n\n");
 }
 
-// удаляет нулевые коэффициенты при старших степенях
+// delete coefficients of zero of highest x-degree
 void ZeroCoefficients(Array* Polinom) 
 {
 	switch (Polinom->el_size)
 	{
 		case sizeof(int):
 		{
-			while (*((int*)Polinom->buffer + Polinom->count_element - 1) == 0)
+			while (*((int*)Polinom->buffer + Polinom->degree) == 0 && Polinom->degree > 0)
 			{
 				Polinom->degree--;
 				Polinom->count_element--;
-				//освобождение адреса
 			}
 		}
 		case sizeof(double):
 		{
-			while (*((double*)Polinom->buffer + Polinom->count_element - 1) == 0)
+			while (*((double*)Polinom->buffer + Polinom->degree) == 0 && Polinom->degree > 0)
 			{
 				Polinom->degree--;
 				Polinom->count_element--;
-				//освобождение адреса
 			}
 		}
 	}
 }
 
-// создает и возвращает структуру "полином" с порядковым номером num
-// из заданного типа (num = 0 - полином без порядкового номера)
+
 Array* Create(int el_size, int num)  
 {									
 	int degree;
 	int error_code;
 	Array* Polinom = (Array*)malloc(sizeof(Array));
 	
-	do  // запрашивает степень полинома 
+	do  // read polinom degree 
 	{
 		num ? printf("Please, input degree 'n' of polinomial %d: ", num) : printf("Please, input degree 'n' of polinomial: ");
 		
 		error_code = scanf("%d", &degree);
 		CleanCh();
-		if (!error_code) 
+		if (!error_code || degree <= 0) 
 		{
-			printf("InputError: expected integer argument. Please, try again.\n\n");
+			printf("InputError: expected natural argument. Please, try again.\n\n");
 			continue;
 		}
-		printf("Your input: %d\n\n", degree);
-	} while (!error_code);
-	
+	} while (!error_code || degree <= 0);
+	printf("Your input: %d\n\n", degree);
+
 	Polinom->degree = degree;
 	Polinom->count_element = degree + 1;
 	Polinom->el_size = el_size;
+	Polinom->buffer = malloc(Polinom->el_size * (Polinom->count_element));
 
 	ReadCoefficients(Polinom);
 	ZeroCoefficients(Polinom);
@@ -152,9 +146,10 @@ Array* Create(int el_size, int num)
 	return Polinom;
 }
 
-// складывает 2 полинома
 Array* Addition(Array* Polinom1, Array* Polinom2)
 {
+	if (Polinom1->el_size != Polinom2->el_size)
+		ParameterError();
 	int i;
 	int min_count = min(Polinom1->count_element, Polinom2->count_element);
 	int max_count = max(Polinom1->count_element, Polinom2->count_element);
@@ -191,19 +186,19 @@ Array* Addition(Array* Polinom1, Array* Polinom2)
 		}
 	}
 	ZeroCoefficients(Polinom);
+	printf("Result of polinomial addition:\n");
 	OutputPolinom(Polinom);
-	free(Polinom1);
-	free(Polinom2);
 	return Polinom;
 }
 
-// перемножает два введенных полинома
 Array* Multiplication(Array* Polinom1, Array* Polinom2)
 {
+	if (Polinom1->el_size != Polinom2->el_size)
+		ParameterError();
 	int degree = Polinom1->degree + Polinom2->degree;
 	Array* Polinom = malloc(sizeof(Array));
 
-	Polinom->buffer = malloc(Polinom1->el_size * degree);
+	Polinom->buffer = malloc(Polinom1->el_size * (degree + 1));
 	Polinom->el_size = Polinom1->el_size;
 	Polinom->degree = degree;
 	Polinom->count_element = degree + 1;
@@ -244,57 +239,25 @@ Array* Multiplication(Array* Polinom1, Array* Polinom2)
 		}
 	}
 	ZeroCoefficients(Polinom);
+	printf("Result of polinomial multiplication:\n");
 	OutputPolinom(Polinom);
-	free(Polinom1);
-	free(Polinom2);
 	return Polinom;
 }
 
-// умножает полином на число
-void MultiplicationbyConstant(Array* Polinom)
+void MultiplicationbyConstant(Array* Polinom, void* alpha)
 {
 	switch (Polinom->el_size)
 	{
 		case sizeof(int) :
 		{
-			int alpha;
-			int error_code;
-			do
-			{	
-				error_code = 1;
-				printf("Input constant: ");
-				error_code = scanf("%d", &alpha);
-				CleanCh();
-				if (!error_code)
-				{
-					printf("InputError: expected integer argument. Please, try again.\n\n");
-					continue;
-				}
-				printf("Your input: %d\n\n", alpha);
-				for (int i = 0; i < Polinom->count_element; i++)
-					*((int*)Polinom->buffer + i) *= alpha;
-			} while (!error_code);
+			for (int i = 0; i <= Polinom->degree; i++)
+				*((int*)Polinom->buffer + i) *= *((int*)alpha);
 			break;
 		}
 		case sizeof(double) :
 		{
-			double alpha;
-			int error_code;
-			do
-			{
-				error_code = 1;
-				printf("Input constant: ");
-				error_code = scanf("%lf", &alpha);
-				CleanCh();
-				if (!error_code)
-				{
-					printf("InputError: expected double argument. Please, try again\n\n");
-					continue;
-				}
-				printf("Your input: %lf\n\n", alpha);
-				for (int i = 0; i < Polinom->count_element; i++)
-					*((double*)Polinom->buffer + i) *= alpha;
-			} while (!error_code);
+			for (int i = 0; i <= Polinom->degree; i++)
+				*((double*)Polinom->buffer + i) *= *((double*)alpha);
 			break;
 		}
 	}
@@ -303,71 +266,134 @@ void MultiplicationbyConstant(Array* Polinom)
 	OutputPolinom(Polinom);
 }
 
-//Композиция
-void Composition()
+Array* Composition(Array* PolinomA, Array* PolinomF)
 {
+	if (PolinomA->el_size != PolinomF->el_size)
+		ParameterError();
+	int i;
+	int j;
+	int degree;
 
+	degree = PolinomA->degree * PolinomF->degree;
+
+	if (PolinomA->degree == 0)
+		degree = PolinomF->degree;
+	if (PolinomF->degree == 0)
+		degree = 0;
+
+	Array* PolinomRes = malloc(sizeof(Array));
+	PolinomRes->buffer = malloc(PolinomA->el_size * (degree + 1));
+	PolinomRes->el_size = PolinomA->el_size;
+	PolinomRes->degree = degree;
+	PolinomRes->count_element = degree + 1;
+
+	switch (PolinomA->el_size)
+	{
+		case sizeof(int) :
+		{
+			for (i = 0; i <= PolinomRes->degree; i++)
+				*((int*)PolinomRes->buffer + i) = 0;
+
+			for (i = 0; i <= PolinomF->degree; i++)
+			{
+				Array* PolinomH = malloc(sizeof(Array));
+				Array* PolinomH2;
+				PolinomH->buffer = malloc(PolinomA->el_size * (degree + 1));
+				PolinomH->el_size = PolinomA->el_size;
+				PolinomH->degree = 0;
+				PolinomH->count_element = degree + 1;
+
+				*((int*)PolinomH->buffer) = 1;
+				for (int k = 1; k <= PolinomH->count_element - 1; k++)
+					*((int*)PolinomH->buffer + k) = 0;
+
+				for (j = 1; j <= i; j++)
+				{
+					PolinomH2 = Multiplication(PolinomH, PolinomA);
+					Array* q = PolinomH;
+					PolinomH = PolinomH2;
+					free(q);
+				}
+				MultiplicationbyConstant(PolinomH, (int*)PolinomF->buffer + i);
+
+				PolinomH2 = PolinomRes;
+				PolinomRes = Addition(PolinomRes, PolinomH);
+				free(PolinomH2);
+				free(PolinomH);
+			}
+			break;
+		}
+		case sizeof(double) :
+		{
+			for (i = 0; i <= PolinomRes->degree; i++)
+				*((double*)PolinomRes->buffer + i) = 0;
+
+			for (i = 0; i <= PolinomF->degree; i++)
+			{
+				Array* PolinomH = malloc(sizeof(Array));
+				Array* PolinomH2;
+				PolinomH->buffer = malloc(PolinomA->el_size * (degree + 1));
+				PolinomH->el_size = PolinomA->el_size;
+				PolinomH->degree = 0;
+				PolinomH->count_element = degree + 1;
+
+				*((double*)PolinomH->buffer) = 1;
+				for (int k = 1; k <= PolinomH->count_element - 1; k++)
+					*((double*)PolinomH->buffer + k) = 0;
+
+				for (j = 1; j <= i; j++)
+				{
+					PolinomH2 = Multiplication(PolinomH, PolinomA);
+					Array* q = PolinomH;
+					PolinomH = PolinomH2;
+					free(q);
+				}
+				MultiplicationbyConstant(PolinomH, (double*)PolinomF->buffer + i);
+
+				PolinomH2 = PolinomRes;
+				PolinomRes = Addition(PolinomRes, PolinomH);
+				free(PolinomH2);
+				free(PolinomH);
+			}
+			break;
+		}
+		
+	}
+	ZeroCoefficients(PolinomRes);
+	printf("Result of composition:\n");
+	OutputPolinom(PolinomRes);
+	return PolinomRes;
 }
 
-
-// считает значение полинома при заданом аргументе
-void Calculate(Array* Polinom)
+void Calculate(Array* Polinom, void* x)
 {
 	int i;
 	switch (Polinom->el_size)
 	{
 		case sizeof(int) :
 		{
-			int x;
 			int xh;
 			int result = 0;
-			int error_code;
-			do
+			
+			for (i = Polinom->degree; i >= 0; i--)
 			{
-				error_code = 1;
-				printf("Input argument: ");
-				error_code = scanf("%d", &x);
-				CleanCh();
-				if (!error_code)
-				{
-					printf("InputError: expected integer argument. Please, try again\n\n");
-					continue;
-				}
-				printf("Your input: %d\n\n", x);
-				for (i = Polinom->count_element - 1; i >= 0; i--)
-				{
-					xh = (int)pow(x, i);
-					result += *((int*)Polinom->buffer + i) * xh;
-				}
-			} while (!error_code);
-			printf("Result: P(%d)(%d) = %d\n\n", Polinom->degree, x, result);
+				xh = (int)pow(*((int*)x), i);
+				result += *((int*)Polinom->buffer + i) * xh;
+			}
+			printf("Result of calculating: P(%d)(%d) = %d\n\n", Polinom->degree, *((int*)x), result);
 			break;
 		}
 		case sizeof(double) :
 		{
-			double x;
 			double xh;
 			double result = 0;
-			int error_code;
-			do
+
+			for (i = Polinom->degree; i >= 0; i--)
 			{
-				error_code = 1;
-				printf("Input argument: ");
-				error_code = scanf("%lf", &x);
-				CleanCh();
-				if (!error_code)
-				{
-					printf("InputError: expected double argument. Please, try again\n\n");
-					continue;
-				}
-				printf("Your input: %lf\n\n", x);
-				for (i = Polinom->count_element - 1; i >= 0; i--)
-				{
-					xh = pow(x, i);
-					result += *((double*)Polinom->buffer + i) * xh;
-				}
-			} while (!error_code);
-			printf("Result: P(%d)(%lf) = %lf\n\n", Polinom->degree,  x, result);
+				xh = (double)pow(*((double*)x), i);
+				result += *((double*)Polinom->buffer + i) * xh;
+			}
+			printf("Result of calculating: P(%d)(%lf) = %lf\n\n", Polinom->degree,  *((double*)x), result);
 			break;
 		}
 	}

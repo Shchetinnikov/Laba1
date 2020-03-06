@@ -2,8 +2,8 @@
 
 typedef struct Array
 {
-	void* buffer;  // коэффициенты
-	int degree;  // степень
+	void* buffer;  // coefficients
+	int degree;  
 	int count_element;
 	int el_size;
 } Array;
@@ -22,7 +22,7 @@ void Instroduce()
 		"\t\t a(n) - coefficient of argument x^n\n\n");
 }
 
-int Menu() // Выводит меню, запрашивает и возвращает пункт
+int Menu() 
 {
 	int item;
 
@@ -43,7 +43,7 @@ int Menu() // Выводит меню, запрашивает и возвращает пункт
 	return item;
 }
 
-int ElementType()  // Запрашивает тип, возвращает размер типа 
+int ElementType() 
 {
 	int data_type;
 	while (1)
@@ -69,5 +69,48 @@ int ElementType()  // Запрашивает тип, возвращает размер типа
 			data_type = sizeof(double);
 
 		return data_type;
+	}
+}
+
+void ParameterError()
+{
+	printf("ParameterError: expected one type of parameters. End of running the programme...\n\n");
+	exit(0);
+}
+
+void InputControl(void* alpha, int el_size)
+{
+	int error_code;
+
+	switch (el_size)
+	{
+		case sizeof(int) :
+		{
+			do
+			{
+				error_code = 1;
+				printf("Input argument: ");
+				error_code = scanf("%d", (int*)alpha);
+				CleanCh();
+				if (!error_code)
+					printf("InputError: expected integer argument. Please, try again.\n\n");
+			} while (!error_code);
+			printf("Your input: %d\n\n", *((int*)alpha));
+			return;
+		}
+		case sizeof(double) :
+		{
+			do
+			{
+				error_code = 1;
+				printf("Input argument: ");
+				error_code = scanf("%lf", (double*)alpha);
+				CleanCh();
+				if (!error_code)
+					printf("InputError: expected double argument. Please, try again.\n\n");
+			} while (!error_code);
+			printf("Your input: %lf\n\n", *((double*)alpha));
+			return;
+		}
 	}
 }

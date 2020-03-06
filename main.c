@@ -11,13 +11,13 @@ int CountPolinom()
 		printf("Input count of polinomials: ");
 		error_code = scanf("%d", &n);
 		CleanCh();
-		if (!error_code)
+		if (!error_code || n <= 0)
 		{
-			printf("InputError: expected integer argument. Please, try again.\n\n");
+			printf("InputError: expected natural argument. Please, try again.\n\n");
 			continue;
 		}
 		printf("Your input : %d\n\n", n);
-	} while (!error_code);
+	} while (!error_code || n <= 0);
 	
 	return n;
 }
@@ -33,65 +33,89 @@ void main()
 
 	while (1)
 	{
-		do
-		{  // выбор типа данных и пункта меню
+		do // selection of data type and menu item
+		{ 
 			el_size = ElementType();
 			item = Menu();
 		} while (item == '6');
 		
 		switch (item)
 		{
-			case '1': // Сложение многочленов
+			case '1': // Polinomial addition
 			{
 				n = CountPolinom();
 
 				Array* Polinom = Create(el_size, 1);
+				Array* PolinomRes = Polinom;
 				for (int i = 2; i <= n; i++) 
 				{
 					Array* PolinomI = Create(el_size, i);
-					if (i == n)
-						printf("Result of polinomial addition:\n");
-					Polinom = Addition(Polinom, PolinomI);
+					printf("Step: %d\n", i - 1);
+					PolinomRes = Addition(PolinomRes, PolinomI);
+					free(PolinomI);
 				}
+				free(Polinom);
+				free(PolinomRes);
 				break;
 			}
-			case '2':
+			case '2': // Polinomial multiplication
 			{
 				n = CountPolinom();
 
 				Array* Polinom = Create(el_size, 1);
+				Array* PolinomRes = Polinom;
 				for (int i = 2; i <= n; i++) 
 				{
-					Array* PolinomI = Create(el_size, i);		
-					if (i == n)
-						printf("Result of polinomial multiplication:\n");
-					Polinom = Multiplication(Polinom, PolinomI);
+					Array* PolinomI = Create(el_size, i);	
+					printf("Step: %d\n", i - 1);
+					PolinomRes = Multiplication(PolinomRes, PolinomI);
+					free(PolinomI);
 				}
+				free(Polinom);
+				free(PolinomRes);
 				break;
 			}
-			case '3':
+			case '3': // Polinomial multiplication by constant				
 			{
+				void* alpha = malloc(el_size);
 				Array* Polinom = Create(el_size, 0);
-				MultiplicationbyConstant(Polinom);
+
+				InputControl(alpha, el_size);
+				MultiplicationbyConstant(Polinom, alpha);
+				free(Polinom);
+				free(alpha);
 				break;
 			}
-			case '4':
+			case '4': // Calculating polinomial by argument
 			{
+				void* x = malloc(el_size);
 				Array* Polinom = Create(el_size, 0);
-				Calculate(Polinom);	
+				
+				InputControl(x, el_size);
+				Calculate(Polinom, x);
+				free(Polinom);
+				free(x);
 				break;
 			}
-			case '5':
+			case '5': // Composition of functions
 			{
-				//Композиция
+				printf("Create function-argument\n");
+				Array* PolinomA = Create(el_size, 0);
+				printf("Create function-function\n");
+				Array* PolinomF = Create(el_size, 0);
+				Array* PolinomRes = PolinomF;
+				PolinomRes = Composition(PolinomA, PolinomRes);
+				free(PolinomA);
+				free(PolinomF);
+				free(PolinomRes);
 				break;
 			}
-			case '7':
+			case '7': // exit
 			{
 				printf("End of running the programme...\n\n");
 				exit(0);
 			}
-			default:
+			default: // unexpected
 			{
 				printf("InputError: item doesn't exist. Please, try again.\n\n");
 				break;
