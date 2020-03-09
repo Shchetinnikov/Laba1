@@ -4,6 +4,60 @@
 #include <math.h>
 #include "interface.h"
 
+typedef struct Array
+{
+	void* buffer;  // coefficients
+	int degree;
+	int count_element;
+	int el_size;
+} Array;
+
+void DisposePolinom(Array* Polinom)
+{
+	free(Polinom->buffer);
+	free(Polinom);
+}
+
+void OutputPolinom(Array* Polinom)
+{
+	int i;
+	printf("P(%d)(x) = ", Polinom->degree);
+	switch (Polinom->el_size)
+	{
+		case sizeof(int) :
+		{
+			for (i = Polinom->degree; i >= 0; i--)
+				if (*((int*)Polinom->buffer + i) < 0)
+				{
+					printf("(%d) * x^%d", *((int*)Polinom->buffer + i), i);
+					printf(i ? " + " : "");
+				}
+				else
+				{
+					printf("%d * x^%d", *((int*)Polinom->buffer + i), i);
+					printf(i ? " + " : "");
+				}
+			break;
+		}
+		case sizeof(double) :
+		{
+			for (i = Polinom->degree; i >= 0; i--)
+				if (*((double*)Polinom->buffer + i) < 0)
+				{
+					printf("(%lf) * x^%d", *((double*)Polinom->buffer + i), i);
+					printf(i ? " + " : "");
+				}
+				else
+				{
+					printf("%lf * x^%d", *((double*)Polinom->buffer + i), i);
+					printf(i ? " + " : "");
+				}
+			break;
+		}
+	}
+	printf("\n\n");
+}
+
 void ReadCoefficients(Array* Polinom)
 {
 	int error_code;
@@ -47,46 +101,6 @@ void ReadCoefficients(Array* Polinom)
 			}
 		}
 	} while (!error_code);
-}
-
-void OutputPolinom(Array* Polinom)
-{
-	int i;
-	printf("P(%d)(x) = ", Polinom->degree);
-	switch (Polinom->el_size)
-	{
-		case sizeof(int):
-		{
-			for (i = Polinom->degree; i >= 0; i--)
-				if (*((int*)Polinom->buffer + i) < 0)
-				{
-					printf("(%d) * x^%d", *((int*)Polinom->buffer + i), i);
-					printf(i ? " + " : "");
-				}
-				else 
-				{					
-						printf("%d * x^%d", *((int*)Polinom->buffer + i), i);
-						printf(i ? " + " : "");
-				}
-			break;
-		}
-		case sizeof(double):
-		{
-			for (i = Polinom->degree; i >= 0; i--)
-				if (*((double*)Polinom->buffer + i) < 0)
-				{
-					printf("(%lf) * x^%d", *((double*)Polinom->buffer + i), i);
-					printf(i ? " + " : "");
-				}
-				else
-				{
-					printf("%lf * x^%d", *((double*)Polinom->buffer + i), i);
-					printf(i ? " + " : "");
-				}
-			break;
-		}
-	}
-	printf("\n\n");
 }
 
 // delete coefficients of zero of highest x-degree
@@ -270,9 +284,14 @@ Array* Composition(Array* PolinomA, Array* PolinomF)
 {
 	if (PolinomA->el_size != PolinomF->el_size)
 		ParameterError();
+
 	int i;
 	int j;
 	int degree;
+	Array* PolinomH;
+	Array* PolinomH2;
+	Array* PolinomRes;
+	Array* polinom;
 
 	degree = PolinomA->degree * PolinomF->degree;
 
@@ -281,7 +300,7 @@ Array* Composition(Array* PolinomA, Array* PolinomF)
 	if (PolinomF->degree == 0)
 		degree = 0;
 
-	Array* PolinomRes = malloc(sizeof(Array));
+	PolinomRes = malloc(sizeof(Array));
 	PolinomRes->buffer = malloc(PolinomA->el_size * (degree + 1));
 	PolinomRes->el_size = PolinomA->el_size;
 	PolinomRes->degree = degree;
@@ -296,8 +315,7 @@ Array* Composition(Array* PolinomA, Array* PolinomF)
 
 			for (i = 0; i <= PolinomF->degree; i++)
 			{
-				Array* PolinomH = malloc(sizeof(Array));
-				Array* PolinomH2;
+				PolinomH = malloc(sizeof(Array));
 				PolinomH->buffer = malloc(PolinomA->el_size * (degree + 1));
 				PolinomH->el_size = PolinomA->el_size;
 				PolinomH->degree = 0;
@@ -310,16 +328,16 @@ Array* Composition(Array* PolinomA, Array* PolinomF)
 				for (j = 1; j <= i; j++)
 				{
 					PolinomH2 = Multiplication(PolinomH, PolinomA);
-					Array* q = PolinomH;
+					polinom = PolinomH;
+					DisposePolinom(polinom);
 					PolinomH = PolinomH2;
-					free(q);
 				}
 				MultiplicationbyConstant(PolinomH, (int*)PolinomF->buffer + i);
 
-				PolinomH2 = PolinomRes;
+				polinom = PolinomRes;
 				PolinomRes = Addition(PolinomRes, PolinomH);
-				free(PolinomH2);
-				free(PolinomH);
+				DisposePolinom(polinom);
+				DisposePolinom(PolinomH);
 			}
 			break;
 		}
@@ -330,8 +348,7 @@ Array* Composition(Array* PolinomA, Array* PolinomF)
 
 			for (i = 0; i <= PolinomF->degree; i++)
 			{
-				Array* PolinomH = malloc(sizeof(Array));
-				Array* PolinomH2;
+				PolinomH = malloc(sizeof(Array));
 				PolinomH->buffer = malloc(PolinomA->el_size * (degree + 1));
 				PolinomH->el_size = PolinomA->el_size;
 				PolinomH->degree = 0;
@@ -344,16 +361,16 @@ Array* Composition(Array* PolinomA, Array* PolinomF)
 				for (j = 1; j <= i; j++)
 				{
 					PolinomH2 = Multiplication(PolinomH, PolinomA);
-					Array* q = PolinomH;
+					polinom = PolinomH;
+					DisposePolinom(polinom);
 					PolinomH = PolinomH2;
-					free(q);
 				}
 				MultiplicationbyConstant(PolinomH, (double*)PolinomF->buffer + i);
 
-				PolinomH2 = PolinomRes;
+				polinom = PolinomRes;
 				PolinomRes = Addition(PolinomRes, PolinomH);
-				free(PolinomH2);
-				free(PolinomH);
+				DisposePolinom(polinom);
+				DisposePolinom(PolinomH);
 			}
 			break;
 		}

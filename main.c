@@ -27,6 +27,8 @@ void main()
 	int n;
 	int item;
 	int el_size;
+	Array* PolinomRes;
+	Array* PolinomH;
 
 	printf("**Starting running the programme**\n\n");
 	Instroduce();
@@ -46,16 +48,18 @@ void main()
 				n = CountPolinom();
 
 				Array* Polinom = Create(el_size, 1);
-				Array* PolinomRes = Polinom;
+
 				for (int i = 2; i <= n; i++) 
 				{
 					Array* PolinomI = Create(el_size, i);
 					printf("Step: %d\n", i - 1);
-					PolinomRes = Addition(PolinomRes, PolinomI);
-					free(PolinomI);
+					PolinomRes = Addition(Polinom, PolinomI);
+					DisposePolinom(PolinomI);
+					PolinomH = Polinom;
+					DisposePolinom(PolinomH);
+					Polinom = PolinomRes;
 				}
-				free(Polinom);
-				free(PolinomRes);
+				DisposePolinom(Polinom);
 				break;
 			}
 			case '2': // Polinomial multiplication
@@ -63,16 +67,18 @@ void main()
 				n = CountPolinom();
 
 				Array* Polinom = Create(el_size, 1);
-				Array* PolinomRes = Polinom;
+
 				for (int i = 2; i <= n; i++) 
 				{
 					Array* PolinomI = Create(el_size, i);	
 					printf("Step: %d\n", i - 1);
-					PolinomRes = Multiplication(PolinomRes, PolinomI);
-					free(PolinomI);
+					PolinomRes = Multiplication(Polinom, PolinomI);
+					DisposePolinom(PolinomI);
+					PolinomH = Polinom;
+					DisposePolinom(PolinomH);
+					Polinom = PolinomRes;
 				}
-				free(Polinom);
-				free(PolinomRes);
+				DisposePolinom(Polinom);
 				break;
 			}
 			case '3': // Polinomial multiplication by constant				
@@ -82,7 +88,7 @@ void main()
 
 				InputControl(alpha, el_size);
 				MultiplicationbyConstant(Polinom, alpha);
-				free(Polinom);
+				DisposePolinom(Polinom);
 				free(alpha);
 				break;
 			}
@@ -93,7 +99,7 @@ void main()
 				
 				InputControl(x, el_size);
 				Calculate(Polinom, x);
-				free(Polinom);
+				DisposePolinom(Polinom);
 				free(x);
 				break;
 			}
@@ -105,9 +111,9 @@ void main()
 				Array* PolinomF = Create(el_size, 0);
 				Array* PolinomRes = PolinomF;
 				PolinomRes = Composition(PolinomA, PolinomRes);
-				free(PolinomA);
-				free(PolinomF);
-				free(PolinomRes);
+				DisposePolinom(PolinomA);
+				DisposePolinom(PolinomF);
+				DisposePolinom(PolinomRes);
 				break;
 			}
 			case '7': // exit

@@ -1,13 +1,5 @@
 #include <string.h>
 
-typedef struct Array
-{
-	void* buffer;  // coefficients
-	int degree;  
-	int count_element;
-	int el_size;
-} Array;
-
 void CleanCh()
 {
 	while (getchar() != '\n')
